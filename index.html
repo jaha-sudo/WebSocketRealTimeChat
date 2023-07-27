@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Простой мессенджер</title>
+  <style>
+    /* Стили для выравнивания сообщений */
+    .message {
+      padding: 5px;
+    }
+
+    .my-message {
+      text-align: right;
+      background-color: #e6eaf0;
+    }
+
+    .other-message {
+      text-align: left;
+      background-color: #f0eae6;
+    }
+  </style>
+</head>
+<body>
+  <h1>Мессенджер</h1>
+  <input type="text" id="usernameInput" placeholder="Введите ваше имя">
+  <input type="text" id="messageInput" placeholder="Введите сообщение">
+  <button onclick="sendMessage()">Отправить</button>
+  <div id="messages"></div>
+
+  <script>
+    const ws = new WebSocket('ws://localhost:9000');
+    let username = '';
+
+    ws.onopen = () => {
+      console.log('Соединение установлено');
+    };
+
+    ws.onmessage = async (event) => {
+      const data = JSON.parse(await event.data.text());
+      displayMessage(data.username, data.message);
+    };
+
+    function sendMessage() {
+      const usernameInput = document.getElementById('usernameInput');
+      const messageInput = document.getElementById('messageInput');
+
+      // Проверяем, что введено имя пользователя и сообщение не пустое
+      if (usernameInput.value.trim() === '' || messageInput.value.trim() === '') {
+        alert('Введите имя пользователя и сообщение');
+        return;
+      }
+
+      username = usernameInput.value.trim();
+      const message = messageInput.value.trim();
+
+      ws.send(JSON.stringify({ username, message }));
+      displayMessage(username, message, true); // Последний аргумент указывает, что это сообщение текущего пользователя
+
+      // Очищаем поля ввода после отправки сообщения
+      messageInput.value = '';
+    }
+
+    // Отправка сообщения при нажатии клавиши Enter
+    document.getElementById('messageInput').addEventListener('keyup', (event) => {
+      if (event.key === 'Enter') {
+        sendMessage();
+      }
+    });
+
+    function displayMessage(username, message, isMyMessage = false) {
+      const messagesDiv = document.getElementById('messages');
+      const messageP = document.createElement('p');
+
+      const messageClass = isMyMessage ? 'my-message' : 'other-message';
+      messageP.classList.add('message', messageClass);
+
+      messageP.textContent = `${username}: ${message}`;
+      messagesDiv.appendChild(messageP);
+    }
+  </script>
+</body>
+</html>
+
